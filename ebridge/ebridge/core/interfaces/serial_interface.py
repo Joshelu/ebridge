@@ -51,8 +51,7 @@ class SerialInterface(BaseInterface):
 
     @property
     def _eol(self) -> bytes:
-        raw = self._cfg.get("eol", "\n")
-        return raw.encode("unicode_escape").decode("ascii").encode()
+        return self._cfg.get("eol", "\n")
 
     @property
     def _encoding(self) -> str:
@@ -179,9 +178,7 @@ class SerialInterface(BaseInterface):
             # Consume la cola asyncio de TX y la pasa al hilo escritor
             while self._running:
                 msg: Message = await self._bus.tx_queue.get()
-                payload = (msg.data + "\n").encode(self._encoding)
-                if self._eol != b"\n":
-                    payload = msg.data.encode(self._encoding) + self._eol
+                payload = msg.data.encode(self._encoding) + self._eol
                 self._write_q.put(payload)
         except asyncio.CancelledError:
             pass
