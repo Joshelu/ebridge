@@ -1,0 +1,67 @@
+# =============================================================================
+# Configuración del dispositivo: example_device
+# =============================================================================
+# Uso: python main.py example_device --port /dev/ttyUSB0
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Configuración del puerto serie
+# ---------------------------------------------------------------------------
+serial:
+  baudrate: 9600
+  bytesize: 8          # 5 | 6 | 7 | 8
+  parity:   N          # N=None | E=Even | O=Odd | M=Mark | S=Space
+  stopbits: 1          # 1 | 1.5 | 2
+  timeout:  0.1        # segundos de timeout de lectura
+  eol:      "\r\n"     # fin de línea para TX (\n | \r | \r\n)
+  encoding: utf-8      # codificación de caracteres
+
+# ---------------------------------------------------------------------------
+# Resaltado de texto con expresiones regulares
+#
+# Colores disponibles:
+#   red, green, yellow, blue, magenta, cyan, white, orange,
+#   bold_red, bold_green, bold, dim
+# ---------------------------------------------------------------------------
+highlights:
+  - pattern: "\\bOK\\b"
+    color:   green
+
+  - pattern: "\\bERROR\\b"
+    color:   bold_red
+
+  - pattern: "\\bWARNING\\b"
+    color:   yellow
+
+  - pattern: "\\bTIMEOUT\\b"
+    color:   orange
+
+  # Fechas en formato YYYY-MM-DD
+  - pattern: "\\d{4}-\\d{2}-\\d{2}"
+    color:   cyan
+
+  # Horas HH:MM:SS
+  - pattern: "\\b\\d{2}:\\d{2}:\\d{2}\\b"
+    color:   cyan
+
+  # Números hexadecimales tipo 0xABCD
+  - pattern: "0x[0-9A-Fa-f]+"
+    color:   magenta
+
+  # Dirección IP
+  - pattern: "\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b"
+    color:   blue
+
+# ---------------------------------------------------------------------------
+# Automatizaciones disponibles para este dispositivo
+#
+# Se invocan desde el terminal con: /nombre_automatizacion [args...]
+# ---------------------------------------------------------------------------
+automations:
+  ponfecha:
+    script:      automations/ponfecha.py
+    description: "Establece la fecha en el dispositivo (args: [dia] [mes])"
+
+  reset:
+    script:      automations/reset.py
+    description: "Reinicia el dispositivo con confirmación"

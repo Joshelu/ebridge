@@ -1,0 +1,42 @@
+# =============================================================================
+# Configuración del dispositivo: gps_module
+# =============================================================================
+# Uso: python main.py gps_module --port /dev/ttyUSB1
+# =============================================================================
+
+serial:
+  baudrate: 4800        # GPS suelen usar 4800 o 9600
+  bytesize: 8
+  parity:   N
+  stopbits: 1
+  timeout:  0.5
+  eol:      "\r\n"
+  encoding: ascii
+
+highlights:
+  # Tramas NMEA válidas
+  - pattern: "\\$GP[A-Z]{3}"
+    color:   cyan
+
+  # Latitud/longitud
+  - pattern: "\\d{4}\\.\\d+,[NS]"
+    color:   green
+
+  - pattern: "\\d{5}\\.\\d+,[EW]"
+    color:   green
+
+  # Checksum
+  - pattern: "\\*[0-9A-F]{2}$"
+    color:   magenta
+
+  # Calidad de señal 0 = no fix
+  - pattern: ",0,"
+    color:   bold_red
+
+  - pattern: "VOID"
+    color:   bold_red
+
+automations:
+  set_baud:
+    script:      automations/gps_set_baud.py
+    description: "Cambia el baudrate del módulo GPS (arg: baudrate)"

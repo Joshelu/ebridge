@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name            = "ebridge"
+version         = "1.0.0"
+description     = "eBridge — Enhanced Bridge: terminal serie con bridge TCP y automatizaciones"
+readme          = "README.md"
+requires-python = ">=3.10"
+license         = { text = "MIT" }
+
+dependencies = [
+    "pyserial>=3.5",
+    "pyyaml>=6.0",
+    "prompt_toolkit>=3.0",
+    "colorama>=0.4",
+]
+
+[project.scripts]
+# Comando de línea de comandos instalado con el paquete.
+# Tras `pip install .` se puede usar directamente:
+#   ebridge example_device --port /dev/ttyUSB0
+ebridge = "ebridge.cli:main"
+
+[tool.setuptools.packages.find]
+# Encuentra automáticamente ebridge y todos sus subpaquetes
+where = ["."]
+
+[tool.setuptools.package-data]
+# Incluye los YAML de dispositivos en el paquete instalado
+"ebridge.devices" = ["*.yaml", "*.yml"]
