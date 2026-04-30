@@ -19,6 +19,7 @@ import serial
 
 from .base import BaseInterface
 from ..message_bus import MessageBus, Message, MessageSource
+from ebridge._ansi import cprint
 
 log = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class SerialInterface(BaseInterface):
     # ------------------------------------------------------------------
 
     @property
-    def _eol(self) -> bytes:
+    def _eol(self) -> str:
         return self._cfg.get("eol", "\n")
 
     @property
@@ -158,12 +159,12 @@ class SerialInterface(BaseInterface):
         try:
             self._ser = self._open_serial()
         except serial.SerialException as e:
-            print(f"\033[91m[SERIAL] No se pudo abrir '{self._port}': {e}\033[0m")
+            cprint(f"\033[91m[SERIAL] No se pudo abrir '{self._port}': {e}\033[0m")
             return
 
         self._running = True
-        print(f"\033[92m[SERIAL] Puerto abierto: {self._port} "
-              f"@ {self._cfg.get('baudrate', 9600)} baudios\033[0m")
+        cprint(f"\033[92m[SERIAL] Puerto abierto: {self._port} "
+               f"@ {self._cfg.get('baudrate', 9600)} baudios\033[0m")
 
         reader_t = threading.Thread(
             target=self._reader_thread, args=(loop,), daemon=True, name="serial-reader"
@@ -178,7 +179,7 @@ class SerialInterface(BaseInterface):
             # Consume la cola asyncio de TX y la pasa al hilo escritor
             while self._running:
                 msg: Message = await self._bus.tx_queue.get()
-                payload = msg.data.encode(self._encoding) + self._eol
+                payload = (msg.data + self._eol).encode(self._encoding)
                 self._write_q.put(payload)
         except asyncio.CancelledError:
             pass
@@ -188,4 +189,4 @@ class SerialInterface(BaseInterface):
             writer_t.join(timeout=1)
             if self._ser and self._ser.is_open:
                 self._ser.close()
-            print("\033[93m[SERIAL] Puerto cerrado.\033[0m")
+            cprint("\033[93m[SERIAL] Puerto cerrado.\033[0m")

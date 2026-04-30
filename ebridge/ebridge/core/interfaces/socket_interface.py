@@ -21,6 +21,7 @@ from typing import List, Tuple
 
 from .base import BaseInterface
 from ..message_bus import MessageBus, Message, MessageSource
+from ebridge._ansi import cprint
 
 log = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ class SocketInterface(BaseInterface):
         """Manejador de cada conexión entrante."""
         addr = writer.get_extra_info("peername", ("?", "?"))
         addr_str = f"{addr[0]}:{addr[1]}"
-        print(f"\033[94m[SOCKET] Cliente conectado: {addr_str}\033[0m")
+        cprint(f"\033[94m[SOCKET] Cliente conectado: {addr_str}\033[0m")
 
         async with self._clients_lock:
             self._clients.append(writer)
@@ -91,7 +92,7 @@ class SocketInterface(BaseInterface):
                 await writer.wait_closed()
             except Exception:
                 pass
-            print(f"\033[94m[SOCKET] Cliente desconectado: {addr_str}\033[0m")
+            cprint(f"\033[94m[SOCKET] Cliente desconectado: {addr_str}\033[0m")
 
     # ------------------------------------------------------------------
     # Broadcast de mensajes RX a todos los clientes
@@ -122,9 +123,7 @@ class SocketInterface(BaseInterface):
         server = await asyncio.start_server(
             self._handle_client, self._host, self._port
         )
-        print(
-            f"\033[94m[SOCKET] Escuchando en {self._host}:{self._port} "
-            f"(conecta con: nc {self._host} {self._port})\033[0m"
+        cprint(f"\033[94m[SOCKET] Escuchando en {self._host}:{self._port}\033[0m"
         )
         try:
             async with server:
@@ -135,4 +134,4 @@ class SocketInterface(BaseInterface):
         except asyncio.CancelledError:
             pass
         finally:
-            print("\033[93m[SOCKET] Servidor cerrado.\033[0m")
+            cprint("\033[93m[SOCKET] Servidor cerrado.\033[0m")

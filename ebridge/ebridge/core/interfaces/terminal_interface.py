@@ -38,6 +38,7 @@ from .base import BaseInterface
 from ..message_bus import MessageBus, Message, MessageSource
 from ..highlighter import Highlighter
 from ..automation_engine import AutomationEngine
+from ebridge._ansi import cprint
 
 
 # ---------------------------------------------------------------------------
@@ -51,16 +52,6 @@ SOURCE_PREFIX = {
     MessageSource.AUTOMATION: "\x1b[35m[AUT]\x1b[0m",
 }
 
-
-def _ansi(text: str) -> None:
-    """
-    Imprime texto con códigos ANSI de forma compatible con Windows Terminal.
-
-    prompt_toolkit.print_formatted_text + ANSI() traduce los escape codes
-    al mecanismo nativo de cada plataforma, por lo que funciona dentro y
-    fuera del contexto patch_stdout sin mostrar '?' en Windows.
-    """
-    print_formatted_text(ANSI(text), end="\n")
 
 
 class TerminalInterface(BaseInterface):
@@ -92,43 +83,40 @@ class TerminalInterface(BaseInterface):
 
     # ------------------------------------------------------------------
     # Utilidades de impresión
-    # Todas usan _ansi() → print_formatted_text(ANSI(...))
+    # Todas usan cprint() → print_formatted_text(ANSI(...))
     # para garantizar compatibilidad con Windows Terminal.
     # ------------------------------------------------------------------
 
-    def _print(self, text: str) -> None:
-        """Punto de entrada de impresión para automatizaciones y mensajes internos."""
-        _ansi(text)
 
     def _print_separator(self) -> None:
-        _ansi("\x1b[90m" + "─" * 60 + "\x1b[0m")
+        cprint("\x1b[90m" + "─" * 60 + "\x1b[0m")
 
     def _print_banner(self) -> None:
         name = self._device_name
-        _ansi(
-            f"\x1b[1;96m"
-            f"╔══════════════════════════════════════════╗\n"
-            f"║      eBridge  ·  {name:<16s}  ║\n"
-            f"╚══════════════════════════════════════════╝"
-            f"\x1b[0m"
+        cprint(
+               f"\x1b[1;96m"
+               f"╔══════════════════════════════════════════╗\n"
+               f"║      eBridge  ·  {name:<16s}  ║\n"
+               f"╚══════════════════════════════════════════╝"
+               f"\x1b[0m"
         )
-        _ansi("  /help para ayuda  ·  Ctrl+D para salir")
+        cprint("  /help para ayuda  ·  Ctrl+D para salir")
         self._print_separator()
 
     def _print_help(self) -> None:
         autos = self._automation_engine.list_automations()
-        _ansi(
-            "\n\x1b[1mAyuda del terminal\x1b[0m\n"
-            "  <texto>                → envía al puerto serie\n"
-            "  /<auto> [args...]      → ejecuta una automatización\n"
-            "  /list                  → lista automatizaciones disponibles\n"
-            "  /help                  → muestra esta ayuda\n"
-            "  /quit  o  Ctrl+D       → sale del programa\n"
+        cprint(
+             "\n\x1b[1mAyuda del terminal\x1b[0m\n"
+             "  <texto>                → envía al puerto serie\n"
+             "  /<auto> [args...]      → ejecuta una automatización\n"
+             "  /list                  → lista automatizaciones disponibles\n"
+             "  /help                  → muestra esta ayuda\n"
+             "  /quit  o  Ctrl+D       → sale del programa\n"
         )
         if autos:
-            _ansi(f"  Automatizaciones disponibles: \x1b[96m{', '.join(autos)}\x1b[0m\n")
+            cprint(f"  Automatizaciones disponibles: \x1b[96m{', '.join(autos)}\x1b[0m\n")
         else:
-            _ansi("  No hay automatizaciones configuradas.\n")
+            cprint("  No hay automatizaciones configuradas.\n")
 
     # ------------------------------------------------------------------
     # Bucle de visualización (consumidor de RX)
@@ -151,7 +139,7 @@ class TerminalInterface(BaseInterface):
             highlighted = self._highlighter.highlight(msg.data)
             # Usamos \x1b en lugar de \033 — son equivalentes pero
             # más explícitos en strings que manejan prompt_toolkit.
-            _ansi(f"{prefix} {highlighted}")
+            cprint(f"{prefix} {highlighted}")
 
     # ------------------------------------------------------------------
     # Bucle de entrada de usuario
@@ -183,7 +171,7 @@ class TerminalInterface(BaseInterface):
                 continue
             except EOFError:
                 # Ctrl+D → salida limpia
-                _ansi("\n\x1b[93m[SYS] Saliendo…\x1b[0m")
+                cprint("\n\x1b[93m[SYS] Saliendo…\x1b[0m")
                 self._stop_event.set()
                 break
 
@@ -200,7 +188,7 @@ class TerminalInterface(BaseInterface):
                 args = parts[1:]
 
                 if cmd in ("quit", "exit", "q"):
-                    _ansi("\x1b[93m[SYS] Saliendo…\x1b[0m")
+                    cprint("\x1b[93m[SYS] Saliendo…\x1b[0m")
                     self._stop_event.set()
                     break
                 elif cmd == "help":
@@ -208,9 +196,9 @@ class TerminalInterface(BaseInterface):
                 elif cmd == "list":
                     autos = self._automation_engine.list_automations()
                     if autos:
-                        _ansi(f"Automatizaciones: \x1b[96m{', '.join(autos)}\x1b[0m")
+                        cprint(f"Automatizaciones: \x1b[96m{', '.join(autos)}\x1b[0m")
                     else:
-                        _ansi("No hay automatizaciones configuradas.")
+                        cprint("No hay automatizaciones configuradas.")
                 elif self._automation_engine.has_automation(cmd):
                     # Lanza la automatización como tarea independiente
                     asyncio.create_task(
@@ -218,9 +206,9 @@ class TerminalInterface(BaseInterface):
                         name=f"auto-{cmd}",
                     )
                 else:
-                    _ansi(
-                        f"\x1b[91m[ERROR] Comando desconocido: '/{cmd}'. "
-                        f"Escribe /help para ayuda.\x1b[0m"
+                    cprint(
+                         f"\x1b[91m[ERROR] Comando desconocido: '/{cmd}'. "
+                         f"Escribe /help para ayuda.\x1b[0m"
                     )
             else:
                 # Texto normal → enviar al serie
