@@ -86,18 +86,26 @@ class TerminalInterface(BaseInterface):
     # Todas usan cprint() → print_formatted_text(ANSI(...))
     # para garantizar compatibilidad con Windows Terminal.
     # ------------------------------------------------------------------
-
+    def _print(self, text: str) -> None:
+        """Punto de entrada de impresión para automatizaciones y mensajes internos."""
+        cprint(text)
 
     def _print_separator(self) -> None:
         cprint("\x1b[90m" + "─" * 60 + "\x1b[0m")
 
     def _print_banner(self) -> None:
         name = self._device_name
+        title = f"  eBridge  ·  {name}  "
+        width = len(title)
+        center = "═" * width
+        top    = "╔" + center + "╗"
+        middle = "║" + title +  "║"
+        bottom = "╚" + center + "╝"
         cprint(
                f"\x1b[1;96m"
-               f"╔══════════════════════════════════════════╗\n"
-               f"║      eBridge  ·  {name:<16s}  ║\n"
-               f"╚══════════════════════════════════════════╝"
+               f"{top}\n"
+               f"{middle}\n"
+               f"{bottom}"
                f"\x1b[0m"
         )
         cprint("  /help para ayuda  ·  Ctrl+D para salir")

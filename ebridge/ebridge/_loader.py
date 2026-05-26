@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from ebridge._ansi import cprint
 
 
 def load_device_config(device_name: str) -> dict:
@@ -45,7 +46,7 @@ def load_device_config(device_name: str) -> dict:
     for path in cwd_candidates:
         if path.exists():
             config = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-            print(f"\033[90m[SYS] Configuración cargada: {path.resolve()}\033[0m")
+            cprint(f"\033[90m[SYS] Configuración cargada: {path.resolve()}\033[0m")
             return config
 
     # ── 2. Buscar en los dispositivos incluidos en el paquete ───────────
@@ -59,7 +60,7 @@ def load_device_config(device_name: str) -> dict:
             try:
                 text   = resource.read_text(encoding="utf-8")
                 config = yaml.safe_load(text) or {}
-                print(
+                cprint(
                     f"\033[90m[SYS] Configuración cargada desde el paquete: "
                     f"ebridge/devices/{name}{ext}\033[0m"
                 )
@@ -73,7 +74,7 @@ def load_device_config(device_name: str) -> dict:
     searched = [str(p) for p in cwd_candidates] + [
         f"ebridge/devices/{name}.yaml (incluido en el paquete)"
     ]
-    print(
+    cprint(
         f"\033[91m[ERROR] No se encontró la configuración del dispositivo "
         f"'{device_name}'.\n"
         f"        Rutas buscadas:\n" +

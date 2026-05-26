@@ -16,6 +16,7 @@ import threading
 from typing import Optional
 
 import serial
+import time
 
 from .base import BaseInterface
 from ..message_bus import MessageBus, Message, MessageSource
@@ -52,7 +53,8 @@ class SerialInterface(BaseInterface):
 
     @property
     def _eol(self) -> str:
-        return self._cfg.get("eol", "\n")
+        raw = self._cfg.get("eol", "\n")
+        return raw.encode(self._encoding)
 
     @property
     def _encoding(self) -> str:
@@ -133,13 +135,25 @@ class SerialInterface(BaseInterface):
 
     def _writer_thread(self) -> None:
         """Toma datos de la cola thread-safe y los escribe al serie."""
+        chunk_size  = self._cfg.get("tx_chunk_size", 0)      # 0 = sin chunking
+        chunk_delay = self._cfg.get("tx_chunk_delay", 0.01)  # segundos
+
         while self._running:
             try:
-                data: Optional[bytes] = self._write_q.get(timeout=0.1)
+                data = self._write_q.get(timeout=0.1)
                 if data is None:
                     break
-                self._ser.write(data)
-                self._ser.flush()
+
+                if chunk_size > 0:
+                    for i in range(0, len(data), chunk_size):
+                        self._ser.write(data[i:i + chunk_size])
+                        self._ser.flush()
+                        if i + chunk_size < len(data):
+                            time.sleep(chunk_delay)
+                else:
+                    self._ser.write(data)
+                    self._ser.flush()
+
             except queue.Empty:
                 continue
             except serial.SerialException as e:
@@ -179,7 +193,8 @@ class SerialInterface(BaseInterface):
             # Consume la cola asyncio de TX y la pasa al hilo escritor
             while self._running:
                 msg: Message = await self._bus.tx_queue.get()
-                payload = (msg.data + self._eol).encode(self._encoding)
+                payload = msg.data.encode(self._encoding) + self._eol
+                log.debug("[TX-QUEUE] Encolando %d bytes: %r", len(payload), payload)
                 self._write_q.put(payload)
         except asyncio.CancelledError:
             pass

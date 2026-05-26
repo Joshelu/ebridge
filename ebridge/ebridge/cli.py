@@ -17,6 +17,7 @@ import asyncio
 import logging
 
 from ebridge._runner import run_terminal
+from ebridge._ansi import cprint
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -114,9 +115,9 @@ def main() -> None:
             )
         )
     except KeyboardInterrupt:
-        print("\n\033[93m[SYS] Interrumpido por el usuario.\033[0m")
+        cprint("\n\033[93m[SYS] Interrumpido por el usuario.\033[0m")
     finally:
-        print("\033[90m[SYS] Terminal cerrado.\033[0m")
+        cprint("\033[90m[SYS] Terminal cerrado.\033[0m")
 
 
 if __name__ == "__main__":

@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Callable, Dict, Any, List
 
 from .message_bus import MessageBus, Message, MessageSource
+from ebridge._ansi import cprint
 
 
 class AutomationContext:
@@ -52,7 +53,7 @@ class AutomationContext:
 
     async def send(self, command: str) -> None:
         """Envía un comando al puerto serie y lo muestra en el terminal."""
-        self._print(f"\033[35m[AUTO >>]\033[0m {command}")
+        cprint(f"\033[35m[AUTO >>]\033[0m {command}")
         msg = Message(source=MessageSource.AUTOMATION, data=command)
         await self._bus.send_to_serial(msg)
 
@@ -89,7 +90,7 @@ class AutomationContext:
 
     def debug(self, message: str) -> None:
         """Imprime un mensaje de depuración en el terminal."""
-        self._print(f"\033[35m[AUTO   ]\033[0m {message}")
+        cprint(f"\033[35m[AUTO   ]\033[0m {message}")
 
     def cleanup(self) -> None:
         """Libera el suscriptor de RX al terminar la automatización."""
