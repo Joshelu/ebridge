@@ -26,6 +26,8 @@ import asyncio
 from pathlib import Path
 
 from prompt_toolkit import PromptSession
+from prompt_toolkit.application import run_in_terminal
+from prompt_toolkit.application.current import get_app_session
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.completion import WordCompleter
@@ -37,6 +39,7 @@ from prompt_toolkit.styles import Style
 from .base import BaseInterface
 from ..message_bus import MessageBus, Message, MessageSource
 from ..highlighter import Highlighter
+from ..register_linker import RegisterLinker
 from ..automation_engine import AutomationEngine
 from ebridge._ansi import cprint
 
@@ -66,9 +69,11 @@ class TerminalInterface(BaseInterface):
         highlighter: Highlighter,
         automation_engine: AutomationEngine,
         device_name: str = "",
+        register_linker: RegisterLinker = None,
     ):
         self._bus = bus
         self._highlighter = highlighter
+        self._register_linker = register_linker
         self._automation_engine = automation_engine
         self._device_name = device_name
         self._rx_queue: asyncio.Queue[Message] = bus.create_rx_subscriber()
@@ -89,6 +94,35 @@ class TerminalInterface(BaseInterface):
     def _print(self, text: str) -> None:
         """Punto de entrada de impresión para automatizaciones y mensajes internos."""
         cprint(text)
+
+    async def _print_raw(self, text: str) -> None:
+        """
+        Imprime una línea preservando las secuencias de escape crudas (OSC 8).
+
+        La ruta normal (print_formatted_text / cprint) analiza el ANSI con
+        prompt_toolkit, que elimina los hipervínculos OSC 8. Aquí escribimos con
+        output.write_raw() dentro de run_in_terminal(), que es la forma correcta
+        de emitir secuencias crudas por encima del prompt sin corromperlo.
+
+        Nota: write_raw envía los códigos ANSI (colores + OSC 8) tal cual, por lo
+        que requiere un terminal con soporte VT (Terminal integrado de VS Code,
+        Windows Terminal…), que es el entorno de ejecución objetivo.
+        """
+        output = get_app_session().output
+
+        def _do() -> None:
+            # En Windows, Windows10_Output reactiva el modo VT en cada flush y
+            # resetea el autowrap; lo reactivamos antes de escribir.
+            output.enable_autowrap()
+            output.write_raw(text + "\n")
+            output.flush()
+
+        try:
+            await run_in_terminal(_do, in_executor=False)
+        except Exception:
+            # Si no hay aplicación en ejecución (o cualquier fallo), degradamos
+            # con elegancia a la ruta normal: se pierde el enlace pero no la línea.
+            cprint(text)
 
     def _print_separator(self) -> None:
         cprint("\x1b[90m" + "─" * 60 + "\x1b[0m")
@@ -144,10 +178,27 @@ class TerminalInterface(BaseInterface):
                 continue
 
             prefix = SOURCE_PREFIX.get(msg.source, "")
-            highlighted = self._highlighter.highlight(msg.data)
-            # Usamos \x1b en lugar de \033 — son equivalentes pero
-            # más explícitos en strings que manejan prompt_toolkit.
-            cprint(f"{prefix} {highlighted}")
+
+            # 1) Insertar hipervínculos OSC 8 en las referencias a registros.
+            #    Se hace ANTES del coloreado para que la parte "= 0xVALUE" quede
+            #    intacta y el resaltador pueda colorear el valor hexadecimal.
+            if self._register_linker is not None:
+                body, has_link = self._register_linker.linkify(msg.data)
+            else:
+                body, has_link = msg.data, False
+
+            # 2) Aplicar el resaltado de colores habitual.
+            highlighted = self._highlighter.highlight(body)
+            line = f"{prefix} {highlighted}"
+
+            # 3) Las líneas con enlace deben imprimirse por la ruta cruda para
+            #    que el OSC 8 sobreviva; el resto sigue por la ruta normal.
+            if has_link:
+                await self._print_raw(line)
+            else:
+                # Usamos \x1b en lugar de \033 — son equivalentes pero
+                # más explícitos en strings que manejan prompt_toolkit.
+                cprint(line)
 
     # ------------------------------------------------------------------
     # Bucle de entrada de usuario

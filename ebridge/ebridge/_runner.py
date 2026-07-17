@@ -24,6 +24,7 @@ from typing import Optional
 from ebridge._loader import load_device_config
 from ebridge.core.message_bus import MessageBus
 from ebridge.core.highlighter import Highlighter
+from ebridge.core.register_linker import RegisterLinker
 from ebridge.core.logger import SessionLogger
 from ebridge.core.automation_engine import AutomationEngine
 from ebridge.core.interfaces.serial_interface import SerialInterface
@@ -62,13 +63,15 @@ async def run_terminal(
 
     bus              = MessageBus()
     highlighter      = Highlighter(config.get("highlights", []))
+    register_linker  = RegisterLinker(config.get("register_links", {}))
     automation_engine = AutomationEngine(bus, config.get("automations", {}))
 
     serial_iface   = SerialInterface(bus=bus, port=port,
                                      config=config.get("serial", {}))
     terminal_iface = TerminalInterface(bus=bus, highlighter=highlighter,
                                        automation_engine=automation_engine,
-                                       device_name=device)
+                                       device_name=device,
+                                       register_linker=register_linker)
     socket_iface: Optional[SocketInterface] = None
     if not no_socket:
         socket_iface = SocketInterface(bus=bus, host=socket_host,
