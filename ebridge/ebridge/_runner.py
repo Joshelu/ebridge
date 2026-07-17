@@ -75,8 +75,9 @@ async def run_terminal(
                                        port=socket_port)
 
     logger: Optional[SessionLogger] = None
+    log_config = config.get("log", {})
     if log_file:
-        logger = SessionLogger(log_file)
+        logger = SessionLogger(log_file, log_config)
 
     tasks = [
         asyncio.create_task(terminal_iface.run(), name="terminal"),
