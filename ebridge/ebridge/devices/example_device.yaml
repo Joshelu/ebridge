@@ -53,6 +53,34 @@ highlights:
     color:   blue
 
 # ---------------------------------------------------------------------------
+# Enlaces automáticos a partir de patrones en el log (hipervínculos OSC 8)
+#
+# Detecta líneas que mencionan una referencia con un formato reconocible,
+# por ejemplo:
+#   [INFO] Deploy failed, see ticket:ABCD-4821 for details
+# y convierte esa referencia en un enlace clicable (Ctrl+Click) que abre
+# la página correspondiente en el sistema externo:
+#   https://www.example.com/issues/ABCD-4821
+#
+# La URL final se construye sustituyendo los grupos nombrados del patrón
+# en la plantilla 'url_template'. Requiere un terminal con soporte de
+# hipervínculos (Terminal integrado de VS Code, Windows Terminal, iTerm2).
+# ---------------------------------------------------------------------------
+resource_links:
+  enabled:   true
+  base_url:  "https://www.example.com/issues/"   # base del panel/explorador web
+  color:     blue                      # color del nombre clicable (o "")
+  underline: true                      # subrayar el nombre para indicar enlace
+
+  # Regex con grupos con nombre 'name', 'sep' y 'value'.
+  pattern: '(?P<id>ABCD-\d+)'
+
+  # Prefijos que se eliminan del nombre para obtener el slug del recurso.
+  # Se aplica el primero que coincida al inicio del nombre.
+  strip_prefixes:
+    - 'ticket:'
+
+# ---------------------------------------------------------------------------
 # Automatizaciones disponibles para este dispositivo
 #
 # Se invocan desde el terminal con: /nombre_automatizacion [args...]
