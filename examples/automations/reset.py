@@ -28,7 +28,7 @@ async def run(ctx, *args):
 
     ctx.debug("Esperando confirmación de arranque (máx. 10s)...")
     try:
-        response = await ctx.wait_for(r"RUN_MODE", timeout=10.0)
+        response = await ctx.wait_for(r"READY|BOOT|OK", timeout=10.0)
         ctx.debug(f"Dispositivo reiniciado. Respuesta: {response}")
     except TimeoutError:
         ctx.debug("El dispositivo no respondió tras el reset.")

@@ -1,0 +1,89 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Jose Luis Alcoba Huertas
+
+[build-system]
+# setuptools >= 77 es necesario para PEP 639 (campo `license` como expresión
+# SPDX y `license-files`). Con versiones anteriores el build falla con un
+# error claro en lugar de generar metadatos silenciosamente incorrectos.
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name            = "ebridge"
+description     = "eBridge — Enhanced Bridge: terminal serie con bridge TCP y automatizaciones"
+readme          = "README.md"
+requires-python = ">=3.10"
+
+# Licencia: expresión SPDX (PEP 639). El texto completo se distribuye en el
+# paquete a través de `license-files`.
+license       = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+
+authors = [
+    { name = "Jose Luis Alcoba Huertas" },
+]
+
+# La versión vive únicamente en ebridge/__init__.py (`__version__`) para no
+# tener dos fuentes de verdad que se desincronicen.
+dynamic = ["version"]
+
+# NOTA: con PEP 639 no se debe añadir un clasificador "License :: ..."; la
+# licencia se declara solo en el campo `license`.
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Communications",
+    "Topic :: System :: Hardware",
+    "Topic :: Terminals :: Serial",
+]
+
+keywords = ["serial", "terminal", "tcp", "bridge", "automation", "embedded"]
+
+dependencies = [
+    "pyserial>=3.5",
+    "pyyaml>=6.0",
+    "prompt_toolkit>=3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+]
+
+[project.urls]
+Homepage   = "https://github.com/Joshelu/ebridge"
+Repository = "https://github.com/Joshelu/ebridge"
+Issues     = "https://github.com/Joshelu/ebridge/issues"
+
+[project.scripts]
+# Comando de línea de comandos instalado con el paquete.
+# Tras `pip install .` se puede usar directamente:
+#   ebridge example_device --port /dev/ttyUSB0
+ebridge = "ebridge.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "ebridge.__version__" }
+
+[tool.setuptools.packages.find]
+# Encuentra automáticamente ebridge y todos sus subpaquetes.
+# `include` acota la búsqueda al paquete: el resto de directorios de la raíz
+# (tests, automations, examples) son del repositorio, no del paquete.
+where   = ["."]
+include = ["ebridge*"]
+exclude = ["tests*", "automations*", "examples*"]
+
+[tool.setuptools.package-data]
+# Incluye los YAML de dispositivos en el paquete instalado
+"ebridge.devices" = ["*.yaml", "*.yml"]
+
+[tool.pytest.ini_options]
+testpaths        = ["tests"]
+asyncio_mode     = "auto"
+filterwarnings   = ["error::DeprecationWarning:ebridge.*"]

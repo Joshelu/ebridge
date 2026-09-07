@@ -1,1 +1,0 @@
-# ebridge.core.interfaces
